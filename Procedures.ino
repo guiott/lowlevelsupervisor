@@ -1,22 +1,7 @@
-  /*  ???????????  To Be Done  ????????????????????
-  Send a message to High Level Supervisor to order a shutdown procedure (the last byte of data packet)
-        Wait for ACK
-        Proceed with Shutdown() function
-  
-  I2C procedure with QuadSonar to read obstacles distances 
-        #define I2C_SONAR 0x24  // QuadSonar I2C address
-        I2cRegTx[0] // LL
-        I2cRegTx[1] // LC
-        I2cRegTx[2] // CL
-        I2cRegTx[3] // CC
-        I2cRegTx[4] // CR
-        I2cRegTx[5] // RC
-        I2cRegTx[6] // RR
-        
-  Comm procedure to send to HLS obstacles (1 byte, 255cm MAX), Vbat (0-5 * 20), Temp
-  Comm procedure to receive and decode commands (request for parameters or initiate shutdown procedure)
-  On the same packet receive shutdown order
-  */
+int ShutdownFlag = 0;  // software shutdown started?
+unsigned long ShutdownHlsTimeout = 60000; // HLS shutdown replay timeout in ms
+unsigned long ShutdownHlsTime = 0;
+
 //-----------------------------------------------------------------------------      
 void Shutdown (int ShTime)
 {
@@ -26,8 +11,15 @@ void Shutdown (int ShTime)
  */
   int i=0;
 
-    delay(ShTime);
+  if (ShutdownFlag == 0)  
+  {// shutdown procedure just started
+    ShutdownFlag = 1;
+    hPwrOff = 1;
+    Buff_L.I.lPwrOff = 1;
     
+    delay(ShTime);
+  
+    // start switching down the system
     // Light dim to 0
     for(i=0; i<=255; i++)
     {
@@ -35,7 +27,7 @@ void Shutdown (int ShTime)
       analogWrite(Light_R,255-i);
       delay(5);
     }
-
+  
     #ifdef DEBUG_MODE
       DelayBar(2000);
       DelayBar(2000);
@@ -62,23 +54,32 @@ void Shutdown (int ShTime)
     #endif
     digitalWrite(Pwr_1_En,LOW);
 
-    #ifdef DEBUG_MODE
-      Serial.println("Switching off Power Supply 2");
-      DelayBar(2000);
-    #else 
-      delay(500);
-    #endif
-    digitalWrite(Pwr_2_En,LOW);
-    
-    #ifdef DEBUG_MODE
-      Serial.println("SWITCHING OFF MYSELF");
-      DelayBar(4000);
-      Serial.println("BYE");
-    #else 
-      delay(500);
-    #endif    Beep(1000);
-    digitalWrite(Sw_Power_latch,LOW);
-    while(1){}; //never return
+    ShutdownHlsTime = millis();
+  }
+  else     
+  {// check for a while if HLS is still alive before getting off power
+    if ((digitalRead(Hls_Pwr_Off) == 0) || ((millis()-ShutdownHlsTime) > ShutdownHlsTimeout))
+    {// HLS power really off or  HLS didn't switch off for too much time? Switch off everything
+      #ifdef DEBUG_MODE
+        Serial.println("Switching off Power Supply 2");
+        DelayBar(2000);
+      #else 
+        delay(500);
+      #endif
+      digitalWrite(Pwr_2_En,LOW);
+      
+      #ifdef DEBUG_MODE
+        Serial.println("SWITCHING OFF MYSELF");
+        DelayBar(4000);
+        Serial.println("BYE");
+      #else 
+        delay(500);
+      #endif    
+      Beep(1000);
+      digitalWrite(Sw_Power_latch,LOW);
+      while(1){}; //never return
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------      

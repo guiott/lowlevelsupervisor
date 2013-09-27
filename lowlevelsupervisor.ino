@@ -1,7 +1,7 @@
 /* ////////////////////////////////////////////////////////////////////////////
 ** File:      LowLevelSupervisor.ino
 */                                  
- unsigned char  Ver[] = "LinoLLS     0.9.2 Guiott 10-12"; // 30+1 char
+ unsigned char  Ver[] = "LinoLLS     1.0.0 Guiott 10-12"; // 30+1 char
 
 /**
 * \mainpage LowLevelSupervisor.ino
@@ -30,6 +30,30 @@ guido@guiott.com
 -------------------------------------------------------------------------------
 */
 
+  /*  ???????????  To Be Done  ????????????????????
+  
+  timeout su seriale
+  timeout su I2C
+  se timeout = 0 = no timeout seriale o I2C
+  
+  cambia timeout power off se no seriale
+  
+  cicla in continuazione su shutdown se avviato shutdown in attesa di HLS poweroff
+  
+  I2C procedure with QuadSonar to read obstacles distances 
+        #define I2C_SONAR 0x24  // QuadSonar I2C address
+        I2cRegTx[0] // LL
+        I2cRegTx[1] // LC
+        I2cRegTx[2] // CL
+        I2cRegTx[3] // CC
+        I2cRegTx[4] // CR
+        I2cRegTx[5] // RC
+        I2cRegTx[6] // RR
+        
+        assign values to TX buffer
+  */
+  
+  
 
 // Compiler options
 // #define DEBUG_MODE // If defined the serial output is in ASCII for debug
@@ -38,6 +62,7 @@ guido@guiott.com
 
 #include <Wire.h>
 #include <Metro.h>
+#include <Time.h>
 
 // Digital OUT
 int Led = 13;             // standard yellow led            
@@ -136,8 +161,24 @@ Metro BlinkCycle = Metro(BLINK_OFF,1);       // LED blink cycle
 Metro AnalogCycle = Metro(AVERAGE_CYCLE,1);  // Display write cycle
 Metro SwOffCycle = Metro(SW_OFF_CYCLE,1);    // Sofware Off Button Control cycle
 
-
 int TimeElapsed = millis();
+
+long Bps = 115200;           // serial port speed
+const int MAX_BUFF = 256;   // buffer size
+int RxPtrIn = 0;            // circular queue pointer read
+int RxPtrOut = 0;           // outgoing bytes read by Rx function
+int RxStatus = 0;           // index for command decoding FSM status
+char RxBuff[MAX_BUFF];      // circular buffer
+char TxBuff[MAX_BUFF];
+
+int RX_HEADER_LEN = 3;	    // command string header length (byte)
+
+unsigned long Timeout=50;   // timeout in ms
+long StartTime;             // the moment the packet starts receiving
+int RxPtrStart = 0;         // message packet starting pointer in queue
+int RxPtrEnd = 0;           // message packet ending pointer in queue
+int RxPtrData = 0;          // pointer to first data in queue
+int RxCmdLen = 0;
 
 //-----------------------------------------------------------------------------      
 
@@ -151,6 +192,7 @@ void setup()
   pinMode(A5, INPUT);
   pinMode(A6, INPUT);
   pinMode(Sw_Off_Btn, INPUT);
+  pinMode(Hls_Pwr_Off, INPUT);
     
   pinMode(Led, OUTPUT);      // sets the digital pin as output
   pinMode(Batt_1_En, OUTPUT);
@@ -162,7 +204,17 @@ void setup()
   pinMode(Light_L, OUTPUT);
   pinMode(Light_R, OUTPUT);
 
-  Serial.begin(9600); 
+ // initialize serial:
+  Serial.begin(Bps);
+  // timeout in ms as a function of comm speed and buffer size
+  Timeout = (int)((MAX_BUFF * 10000.0) / Bps); 
+  
+  setTime(11,26,0,10,8,2013); // just for test debug
+  
+  #ifdef DEBUG_MODE
+    Timeout=2000; // need to increase timeout because output requires more time
+  #endif
+
   Wire.begin();                // join i2c bus (as master)
   
   LLSstartup (); 
@@ -176,5 +228,38 @@ void loop()
   if (BlinkCycle.check() == 1) {HeartBeat();}     // Led blink
   if (AnalogCycle.check() == 1) {AnalogRead();}   // Read all analog values
   if (SwOffCycle.check() == 1) {SwOff();}         // Control SW Off button
+  
+  if (RxPtrIn != RxPtrOut) RxData(); // at least one character in circular queue
+ 
+  if (RxStatus == 99)                
+  {// the message packet is complete and verified
+  	 Parser();      // decode ready message packet 
+  }
+  else if (RxStatus > 0) 
+  {// a new message packet is coming
+  	if((millis()-StartTime) > Timeout)
+        {// if the packet is not complete within Timeout ms -> error
+          RxError(1);
+        }
+  }
+}
+
+
+/*==============================================================================*/
+void serialEvent() 
+{/*
+  SerialEvent occurs whenever a new data comes in the
+ hardware serial RX.  This routine is run between each
+ time loop() runs, so using delay inside loop can delay
+ response.  Multiple bytes of data may be available.
+ */
+  while (Serial.available()) 
+  {
+    // get the new byte:
+    char inChar = Serial.read(); 
+    RxBuff[RxPtrIn] = inChar;
+    RxPtrIn ++;	                      // fill-up the circular queue
+    if (RxPtrIn>=MAX_BUFF) RxPtrIn=0; // reset circolar queue
+  }
 }
 
