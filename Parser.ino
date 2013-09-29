@@ -13,6 +13,8 @@ char Test[]="-mary had a little lamb-"; // test string for command 'z'
 void Parser(void)
 {//the message packet is complete and verified, decode ready message packet
     RxStatus = 0;
+    RxTime = millis();  // packet correctly received, reset RX watchdog
+
     switch (RxCmd)
     {
        case 'L': // values coming from Low Level Supervisor OUT

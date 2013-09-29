@@ -1,7 +1,3 @@
-int ShutdownFlag = 0;  // software shutdown started?
-unsigned long ShutdownHlsTimeout = 60000; // HLS shutdown replay timeout in ms
-unsigned long ShutdownHlsTime = 0;
-
 //-----------------------------------------------------------------------------      
 void Shutdown (int ShTime)
 {

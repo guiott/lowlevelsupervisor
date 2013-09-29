@@ -1,17 +1,17 @@
-/* ////////////////////////////////////////////////////////////////////////////
+ /* ////////////////////////////////////////////////////////////////////////////
 ** File:      LowLevelSupervisor.ino
 */                                  
- unsigned char  Ver[] = "LinoLLS     1.0.0 Guiott 10-12"; // 30+1 char
+ unsigned char  Ver[] = "LinoLLS     1.0.0 Guiott 10-13"; // 30+1 char
 
 /**
 * \mainpage LowLevelSupervisor.ino
 * \author    Guido Ottaviani-->guido@guiott.com<--
-* \version 0.9.1
-* \date 10/12
+* \version 1.0.0
+* \date 10/13
 * \details 
  *
 -------------------------------------------------------------------------------
-\copyright 2012 Guido Ottaviani
+\copyright 2012-2013 Guido Ottaviani
 guido@guiott.com
 
     LowLevelSupervisor is free software: you can redistribute it and/or modify
@@ -32,14 +32,8 @@ guido@guiott.com
 
   /*  ???????????  To Be Done  ????????????????????
   
-  timeout su seriale
   timeout su I2C
-  se timeout = 0 = no timeout seriale o I2C
-  
-  cambia timeout power off se no seriale
-  
-  cicla in continuazione su shutdown se avviato shutdown in attesa di HLS poweroff
-  
+      
   I2C procedure with QuadSonar to read obstacles distances 
         #define I2C_SONAR 0x24  // QuadSonar I2C address
         I2cRegTx[0] // LL
@@ -73,7 +67,7 @@ int Pwr_2_En  = 52;       // Enable 7V on PowerControl 2
 int Sw_Power_latch = 53;  // Relay self retention on LL board
 int Buzzer = 51;          // Buzzer on LLS board
 int Sw_Off_Btn = 44;      // Software Off Button
-int Hls_Pwr_Off = 43;     // Hls Power check
+int Hls_Pwr_Off = 42;     // Hls Power check
 
 // PWM
 int Light_L = 2;          // Headlights intensity control
@@ -161,7 +155,7 @@ Metro BlinkCycle = Metro(BLINK_OFF,1);       // LED blink cycle
 Metro AnalogCycle = Metro(AVERAGE_CYCLE,1);  // Display write cycle
 Metro SwOffCycle = Metro(SW_OFF_CYCLE,1);    // Sofware Off Button Control cycle
 
-int TimeElapsed = millis();
+unsigned long TimeElapsed = millis();
 
 long Bps = 115200;           // serial port speed
 const int MAX_BUFF = 256;   // buffer size
@@ -174,11 +168,17 @@ char TxBuff[MAX_BUFF];
 int RX_HEADER_LEN = 3;	    // command string header length (byte)
 
 unsigned long Timeout=50;   // timeout in ms
-long StartTime;             // the moment the packet starts receiving
+unsigned long StartTime;             // the moment the packet starts receiving
 int RxPtrStart = 0;         // message packet starting pointer in queue
 int RxPtrEnd = 0;           // message packet ending pointer in queue
 int RxPtrData = 0;          // pointer to first data in queue
 int RxCmdLen = 0;
+
+int ShutdownFlag = 0;  // software shutdown started?
+unsigned long RxTimeout = 500; // HLS communication timeout in ms
+unsigned long RxTime = millis();
+unsigned long ShutdownHlsTimeout = 60000; // HLS shutdown replay timeout in ms
+unsigned long ShutdownHlsTime = millis();
 
 //-----------------------------------------------------------------------------      
 
@@ -213,6 +213,7 @@ void setup()
   
   #ifdef DEBUG_MODE
     Timeout=2000; // need to increase timeout because output requires more time
+    RxTimeout = 0; // no timeout on RX
   #endif
 
   Wire.begin();                // join i2c bus (as master)
@@ -231,6 +232,17 @@ void loop()
   
   if (RxPtrIn != RxPtrOut) RxData(); // at least one character in circular queue
  
+  if (ShutdownFlag == 1)
+  {// shutdown procedure already started, waiting for HLS confirm
+    Shutdown (10);  
+  }
+  
+  if ((RxTimeout != 0) && ((millis()-RxTime) > RxTimeout))
+  {// no receiving from HLS. Timeout = 0 means no timeout
+    ShutdownHlsTimeout = 5; // if no data from HLS the shutdown is immediate
+    Shutdown (10);  
+  }
+  
   if (RxStatus == 99)                
   {// the message packet is complete and verified
   	 Parser();      // decode ready message packet 
