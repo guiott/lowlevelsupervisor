@@ -18,9 +18,9 @@ void TxData(char TxCmd, int TxCmdLen)
     for (int i=0; i<=TxCmdLen; i++)
     {// compute the checksum while sending
       TxChkSum += (byte)(TxBuff[i]);
-      Serial.write(TxBuff[i]);
+      Serial1.write(TxBuff[i]);
     }
    
-    Serial.write(TxChkSum);
+    Serial1.write(TxChkSum);
 }
 

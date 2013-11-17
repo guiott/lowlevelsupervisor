@@ -29,29 +29,14 @@ guido@guiott.com
 
 -------------------------------------------------------------------------------
 */
-
-  /*  ???????????  To Be Done  ????????????????????
-  
-  timeout su I2C
-      
-  I2C procedure with QuadSonar to read obstacles distances 
-        #define I2C_SONAR 0x24  // QuadSonar I2C address
-        I2cRegTx[0] // LL
-        I2cRegTx[1] // LC
-        I2cRegTx[2] // CL
-        I2cRegTx[3] // CC
-        I2cRegTx[4] // CR
-        I2cRegTx[5] // RC
-        I2cRegTx[6] // RR
-        
-        assign values to TX buffer
-  */
-  
-  
-
-// Compiler options
-// #define DEBUG_MODE // If defined the serial output is in ASCII for debug
+// Compiler options. Define and timeouts should be modified to perform an easier debug
+//#define DEBUG_MODE // If defined the serial output is in ASCII for debug
 // #define DEMO_MODE  // If defined it switches off at the end
+unsigned long Timeout=50;      // timeout in ms once RX packet started. It will be adapted on the serial speed
+unsigned long RxTimeout = 0;   // 500; // HLS communication timeout in ms: no communication at all. "0" means no timeout control 
+unsigned long I2cTimeout = 0;   // 500; // Sonar board communication timeout in ms: no communication at all
+unsigned long ShutdownHlsTimeout = 99000; // HLS shutdown replay timeout in ms
+unsigned long StartupHlsTimeout = 255000;  // HLS startup  timeout in ms
 
 
 #include <Wire.h>
@@ -115,11 +100,11 @@ const float Temp2_K = 5.35;
 
 unsigned long Elapsed = 0;
 
-#define VBATT_THRESHOLD  1350 // Battery alert in Volt * 10
-#define VBATT_THRESHOLD1 1300 // Battery alert in Volt * 10
-#define PWR_THRESHOLD_MIN 550 // Power Supply alert in Volt * 10
-#define PWR_THRESHOLD_MAX 850 // Power Supply alert in Volt * 10
-#define TEMP_THRESHOLD 4500   // Temeperature limit in degrees * 100
+#define VBATT_THRESHOLD  1350 // Battery alert in Volt * 100
+#define VBATT_THRESHOLD1 1300 // Battery alert in Volt * 100
+#define PWR_THRESHOLD_MIN 550 // Power Supply alert in Volt * 100
+#define PWR_THRESHOLD_MAX 850 // Power Supply alert in Volt * 100
+#define TEMP_THRESHOLD 450   // Temeperature limit in degrees * 10
 #define UP 1                  // Arrow direction
 #define DN 2                  // Arrow direction
 #define AVERAGE_MAX 16        // Number of iterations before averaging analog values
@@ -143,6 +128,7 @@ int ErrCode=0;                // Error code
 int LedStat = LOW;
 
 #define I2C_DISP 0x22         // Display I2C address
+#define I2C_SONAR 0x24        // Sonar board I2C address
 
 // SW Off Button must be kept pressed SW_OFF_CYCLE * SW_OFF_MAX ms
 // i.e.: 250 * 12 = 3s
@@ -157,7 +143,7 @@ Metro SwOffCycle = Metro(SW_OFF_CYCLE,1);    // Sofware Off Button Control cycle
 
 unsigned long TimeElapsed = millis();
 
-long Bps = 115200;           // serial port speed
+long Bps = 115200;          // serial port speed
 const int MAX_BUFF = 256;   // buffer size
 int RxPtrIn = 0;            // circular queue pointer read
 int RxPtrOut = 0;           // outgoing bytes read by Rx function
@@ -167,19 +153,19 @@ char TxBuff[MAX_BUFF];
 
 int RX_HEADER_LEN = 3;	    // command string header length (byte)
 
-unsigned long Timeout=50;   // timeout in ms
-unsigned long StartTime;             // the moment the packet starts receiving
+unsigned long StartTime;    // the moment the packet starts receiving
 int RxPtrStart = 0;         // message packet starting pointer in queue
 int RxPtrEnd = 0;           // message packet ending pointer in queue
 int RxPtrData = 0;          // pointer to first data in queue
 int RxCmdLen = 0;
 
 int ShutdownFlag = 0;  // software shutdown started?
-unsigned long RxTimeout = 500; // HLS communication timeout in ms
 unsigned long RxTime = millis();
-unsigned long ShutdownHlsTimeout = 60000; // HLS shutdown replay timeout in ms
+unsigned long I2cTime = millis();
 unsigned long ShutdownHlsTime = millis();
-
+unsigned char Digit_T; // tens on display
+unsigned char Digit_U; // units on display
+    
 //-----------------------------------------------------------------------------      
 
 void setup()
@@ -205,10 +191,10 @@ void setup()
   pinMode(Light_R, OUTPUT);
 
  // initialize serial:
-  Serial.begin(Bps);
+  Serial1.begin(Bps);    // communication with HLS
+  Serial.begin(Bps);     // console
   // timeout in ms as a function of comm speed and buffer size
   Timeout = (int)((MAX_BUFF * 10000.0) / Bps); 
-  
   setTime(11,26,0,10,8,2013); // just for test debug
   
   #ifdef DEBUG_MODE
@@ -245,30 +231,30 @@ void loop()
   
   if (RxStatus == 99)                
   {// the message packet is complete and verified
-  	 Parser();      // decode ready message packet 
+    Parser();      // decode ready message packet 
   }
   else if (RxStatus > 0) 
   {// a new message packet is coming
-  	if((millis()-StartTime) > Timeout)
-        {// if the packet is not complete within Timeout ms -> error
-          RxError(1);
-        }
+    if((millis()-StartTime) > Timeout)
+    {// if the packet is not complete within Timeout ms -> error
+      RxError(1);
+    }
   }
 }
 
 
 /*==============================================================================*/
-void serialEvent() 
+void serialEvent1() 
 {/*
   SerialEvent occurs whenever a new data comes in the
  hardware serial RX.  This routine is run between each
  time loop() runs, so using delay inside loop can delay
  response.  Multiple bytes of data may be available.
  */
-  while (Serial.available()) 
+  while (Serial1.available()) 
   {
     // get the new byte:
-    char inChar = Serial.read(); 
+    char inChar = Serial1.read(); 
     RxBuff[RxPtrIn] = inChar;
     RxPtrIn ++;	                      // fill-up the circular queue
     if (RxPtrIn>=MAX_BUFF) RxPtrIn=0; // reset circolar queue

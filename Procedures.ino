@@ -6,12 +6,14 @@ void Shutdown (int ShTime)
   *
  */
   int i=0;
-
+   int static ShtDwnTimeOld = ShutdownHlsTimeout/1000; 
+   int ShtDwnTime = 0;
+        
   if (ShutdownFlag == 0)  
   {// shutdown procedure just started
     ShutdownFlag = 1;
     hPwrOff = 1;
-    Buff_L.I.lPwrOff = 1;
+    lPwrOff = 1;
     
     delay(ShTime);
   
@@ -26,6 +28,7 @@ void Shutdown (int ShTime)
   
     #ifdef DEBUG_MODE
       DelayBar(2000);
+      Serial.println("-------------Software shutdown started-------------");
       DelayBar(2000);
       Serial.println("Switching off Battery 1");
       DelayBar(2000);
@@ -75,6 +78,22 @@ void Shutdown (int ShTime)
       digitalWrite(Sw_Power_latch,LOW);
       while(1){}; //never return
     }
+    else
+    {
+      ShtDwnTime = (ShutdownHlsTimeout - (millis()-ShutdownHlsTime))/1000;
+      if (ShtDwnTime < ShtDwnTimeOld)
+      {
+        DispDigit(ShtDwnTime, 16);  // convert value in two digits base 16
+        I2cDisplay ((BatteryLevel(Batt1_Vin_Val) | 0XF20), Digit_T, Digit_U, (BatteryLevel(Batt2_Vin_Val) | 0XF20), 0); //display timeout countdown
+      
+        #ifdef DEBUG_MODE
+          Serial.print("      Waiting for HLS shutdown  ");
+          Serial.println(ShtDwnTime);
+        #endif  
+        
+        ShtDwnTimeOld = ShtDwnTime;
+      }
+    }
   }
 }
 
@@ -94,15 +113,8 @@ void SwOff (void)
       {
         SwOffCount = 0;
         SwOffFlag = 1;
-        
-        Wire.beginTransmission(I2C_DISP);
-          Wire.write(0x00);    //write on first register 
-          Wire.write(0x50);    // LEDs bar left CCW animation
-          Wire.write(0x20);    // first cipher 
-          Wire.write(0x2F);    // second cipher
-          Wire.write(0x50);    // LEDs bar right CCW animation
-          Wire.write(0x33);    // Arrows 
-        Wire.endTransmission();
+ 
+        I2cDisplay (0x50, 0x20, 0x2F, 0x50, 0x33);
         
         delay(2000);
       }
@@ -143,7 +155,12 @@ void AnalogRead (void)
   */
   int Dummy; 
   
- // Summation of N values
+  if (ShutdownFlag == 1)
+  {
+    return;
+  }
+  
+  // Summation of N values
   switch (AveragePort)
   { 
     case 0:
@@ -256,7 +273,7 @@ void AnalogRead (void)
       }
       else if(Batt1_Vin_Val < VBATT_THRESHOLD) 
       {
-       Defcon2(51); // never returns because this procedure hangs the program
+       Defcon3(51); // alert
       } 
     
     
@@ -270,7 +287,7 @@ void AnalogRead (void)
       }
       else if(Batt2_Vin_Val < VBATT_THRESHOLD) 
       {
-       Defcon2(52); // never returns because this procedure hangs the program
+       Defcon3(52); // alert
       }   
   
       // --------------------------------------- Power Supply 1
@@ -290,7 +307,7 @@ void AnalogRead (void)
           
       if((Pwr2_Vin_Val < PWR_THRESHOLD_MIN) || (Pwr2_Vin_Val > PWR_THRESHOLD_MAX))
       {
-       Defcon2(5); // never returns because this procedure switches off LLS
+       Defcon2(5); // never returns because this procedure hangs the program
       }  
     
     
@@ -322,105 +339,6 @@ void AnalogRead (void)
 }
 
 //-----------------------------------------------------------------------------      
-void Display (void)
-{
-/**
- *\brief write numbers on display via I2C bus
-  *
- */
-    unsigned char Arrow;
-    int Temp_Val;
-    int Temp_Val_T;
-    int Temp_Val_U;
-    static int TempFlag = 0;
-    
-    
-    //Temperatures
-    if(TempFlag == 0)
-    {// alternating Temp 1 and Temp 2
-      Temp_Val = Temp1_Val;
-      TempFlag = 1;
-      Arrow = DN; //DOWN arrow
-    }
-    else    
-    {
-      Temp_Val = Temp2_Val;
-      TempFlag = 0;
-      Arrow = UP; //UP arrow
-    }
-    Temp_Val_T=Temp_Val/100;
-    Temp_Val_U=(Temp_Val-(Temp_Val_T*100))/10;
-
-    if(!ErrCode)
-    { 
-      Wire.beginTransmission(I2C_DISP);
-        Wire.write(0x00); //write on first register 
-        Wire.write(BatteryLevel(Batt1_Vin_Val));    // LEDs bar left 
-        Wire.write(Temp_Val_T);                     // Degrees units 
-        Wire.write(Temp_Val_U);                     // Degrees tens
-        Wire.write(BatteryLevel(Batt2_Vin_Val));    // LEDs bar right 
-        Wire.write(Arrow);                          // Arrows, DN means Temp 1 
-      Wire.endTransmission();
-    }
-    else
-    {
-      DisplayError();
-    } 
-}
-
-//-----------------------------------------------------------------------------       
-void DisplayError(void)
-{
-  /**
- *\brief Display the error code
-  *
- */
- 
-   Wire.beginTransmission(I2C_DISP);
-      Wire.write(0x00); //write on first register 
-      Wire.write(BatteryLevel(Batt1_Vin_Val));  // LEDs bar left 
-      Wire.write(ErrCode/10 | 0XF30);           // Error Code tens, fast blinking
-      Wire.write(ErrCode    | 0XF30);           // Error Code units,fast blinking 
-      Wire.write(BatteryLevel(Batt2_Vin_Val));  // LEDs bar right 
-      Wire.write(0);                            // Switch off Arrows 
-   Wire.endTransmission();
-}    
-    
-//-----------------------------------------------------------------------------       
-unsigned char BatteryLevel (int Value)
-{
-  /**
- *\brief transform the Battery level value to LEDs bar segments
-  *
- */
-  if (Value >= 1600)
-  {
-    return(5);    // full charge
-  }
-  else if (Value < 1600 && Value >= 1500)
-  {
-    return(4);    // 75% charge
-  }
-  else if (Value < 1500 && Value >= 1450)
-  {
-    return(3);    // 50% charge
-  }
-  else if (Value < 1450 && Value >= 1350)
-  {
-    return(2);    // 25% charge
-  }
-  else if (Value < 1350 && Value >= 1300)
-  {
-    return(1); // alarm, blinking 
-  }
-  else if (Value < 1300)
-  {
-    return(0X31);    // cutoff
-  }
-}
-
-
-//-----------------------------------------------------------------------------      
 void Beep (int Duration)
 {
 /**
@@ -433,33 +351,24 @@ void Beep (int Duration)
 }
 
 //-----------------------------------------------------------------------------      
-void I2cBeep (int Duration)
-{
-/**
- *\brief perform a beep on display of the given duration in milliseconds
-  *
- */
-    Wire.beginTransmission(I2C_DISP);
-    Wire.write(0x05); //write on sixth register: buzzer
-    Wire.write(0X00); //beep ON 
-    Wire.endTransmission();
-    delay(Duration);
-    Wire.beginTransmission(I2C_DISP);
-    Wire.write(0x05); //write on sixth register: buzzer
-    Wire.write(0X10); //beep OFF
-    Wire.endTransmission();   
-}
-
-//-----------------------------------------------------------------------------      
 void Defcon1 (int Code)
 {
 /**
  *\brief do what is needed to manage a critical error:
- *Display error, wait, switch off
-  *
+ *Display error, wait, switch off EVERYTHING
+
+   critical errors that requires complete switchoff:
+          01 = LLS PWR supply not in range
+          02 = Battery 1 voltage very low
  */
   ErrCode=Code;
   DisplayError();
+  
+  #ifdef DEBUG_MODE
+    Serial.print("***** PROGRAM STOPPED ***** coming from Defcon 1 - Err #  ");
+    Serial.println(ErrCode);
+  #endif
+  
   Beep(1000);
   digitalWrite(Batt_1_En,LOW);
   digitalWrite(Batt_2_En,LOW);
@@ -477,7 +386,15 @@ void Defcon2 (int Code)
 /**
  *\brief do what is needed to manage a serious error:
  *Display error, wait for the operator
-  *
+
+  less critical errors that keep LLS on:
+          03 = Battery 2 voltage very low
+          04 = PWR1 supply not in range
+          05 = PWR2 supply not in range
+          06 = HLS board not responding
+          07 = Temperature 1 too high
+          08 = Temperature 2 too high
+          09 = Sonar board not responding
  */
   ErrCode=Code;
   DisplayError();
@@ -489,7 +406,8 @@ void Defcon2 (int Code)
   digitalWrite(Pwr_2_En,LOW);
 
   #ifdef DEBUG_MODE
-    Serial.println("***** PROGRAM STOPPED *****");
+    Serial.print("***** PROGRAM STOPPED ***** coming from Defcon 2 - Err #  ");
+    Serial.println(ErrCode);
   #endif
   
   I2cBeep(1000);
@@ -503,30 +421,19 @@ void Defcon3 (int Code)
 /**
  *\brief do what is needed to manage a warning:
  *change display from normal to allarm (blinking)
-  *
+
+ less critical errors that keep LLS on:
+          51 = Battery 1 voltage  low
+          52 = Battery 2 voltage  low
  */
   ErrCode=Code;
-  DisplayError();
-}
-
-//-----------------------------------------------------------------------------      
-void DelayBar (unsigned int Duration)
-{
-/**
- *\brief perform a delay of given duration in milliseconds, sending a
-  *dotted progression bar on Serial port
-  *just for debug
- */
-  unsigned int MsStep;
-  int J;
   
-  MsStep = Duration / 50;
-  for(J=0; J<=50; J++)
-  {
-    delay(MsStep);
-    Serial.print('.');
-  }
-   Serial.println(' ');
+  #ifdef DEBUG_MODE
+    Serial.print("***** PROGRAM STOPPED ***** coming from Defcon 3 - Err #  ");
+    Serial.println(ErrCode);
+  #endif
+  
+  DisplayError();
 }
 
 //-----------------------------------------------------------------------------      

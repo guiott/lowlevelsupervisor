@@ -19,6 +19,8 @@ void Parser(void)
     {
        case 'L': // values coming from Low Level Supervisor OUT
             L_LLS();
+            
+            break;
         
        case 'z': // send back a text string, just for debug
             // Send string 'Test'
@@ -27,7 +29,7 @@ void Parser(void)
                 TxBuff[i+RX_HEADER_LEN+1] = Test[i];
             }
             TxData('z', 28);
-            Serial.write("\n");
+            Serial1.write("\n");
                  
             break;
             

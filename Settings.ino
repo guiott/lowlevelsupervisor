@@ -248,9 +248,7 @@ void LLSstartup ()
   Temp_Val_T=Temp2_Val/100;
   Temp_Val_U=(Temp2_Val+5-(Temp_Val_T*100))/10;
     
- // TO Be Done; Check boards healt
- 
-   digitalWrite(Batt_1_En,HIGH);
+  digitalWrite(Batt_1_En,HIGH);
   #ifdef DEBUG_MODE
     DelayBar(2000);
   #endif     
@@ -295,9 +293,7 @@ void LLSstartup ()
   }
 
     #ifdef DEBUG_MODE
-      Serial.println("      OK: everything works fine");
-      Serial.println("      ROBOT OPERATIVE");
-      Serial.println("  ");
+      Serial.println("      All basic hardware is ok");
       Serial.println("  ");
     #endif  
     
@@ -307,33 +303,42 @@ void LLSstartup ()
     
     delay(2000);    // wait for stabilization
     
-    Wire.beginTransmission(I2C_DISP);
-    Wire.write(0x00); //write on first register 
-    Wire.write(BatteryLevel(Batt1_Vin_Val));    // LEDs bar left 
-    Wire.write(0);                 
-    Wire.write(0);                
-    Wire.endTransmission();
+    I2cSonar(); // try an I2C communication with Sonar Board to test the goodness. If fail hangs LLS
     
-    delay(500);
-  
-    Wire.beginTransmission(I2C_DISP);
-    Wire.write(0x00); //write on first register 
-    Wire.write(BatteryLevel(Batt1_Vin_Val));    // LEDs bar left 
-    Wire.write(0);                  
-    Wire.write(0);               
-    Wire.write(BatteryLevel(Batt2_Vin_Val));    // LEDs bar right 
-    Wire.endTransmission();
-
-    delay(500);
-
-    Wire.beginTransmission(I2C_DISP);
-    Wire.write(0x00);                           //write on first register 
-    Wire.write(BatteryLevel(Batt1_Vin_Val));    // LEDs bar left 
-    Wire.write(Temp_Val_T);                     // Degrees units 
-    Wire.write(Temp_Val_U);                     // Degrees tens
-    Wire.write(BatteryLevel(Batt2_Vin_Val));    // LEDs bar right 
-    Wire.write(DN);                             // Arrows, DN means Temp 1 
-    Wire.endTransmission();
+    #ifdef DEBUG_MODE
+      Serial.println("      I2C sonar OK");
+    #endif  
+    
+    StartupHlsTimeout /= 1000;  //Timeout in seconds
+    Serial1.setTimeout(1000);
+    while(!Serial1.find("@"))
+    {//wait for HLS replay. Just header is enough
+      DispDigit(StartupHlsTimeout, 16);  // convert value in two digits base 16
+      I2cDisplay ((BatteryLevel(Batt1_Vin_Val) | 0XF20), Digit_T, Digit_U, (BatteryLevel(Batt2_Vin_Val) | 0XF20), 0); //display timeout countdown
+      StartupHlsTimeout--;
+      
+      #ifdef DEBUG_MODE
+        Serial.print("      Waiting for HLS startup  ");
+        Serial.println(StartupHlsTimeout);
+      #endif  
+      
+      if(StartupHlsTimeout <= 0)
+      {
+            Defcon2(6); // timeout error. Never returns because this procedure hangs the program
+      }
+    }
+    
+    #ifdef DEBUG_MODE
+      Serial.println("++++++++++++++++ everithing's fine - ROBOT OPERATIVE ++++++++++++++++");
+      Serial.println("  ");
+      Serial.println("  ");
+    #endif  
+    
+    while (Serial1.available()) 
+    {// clean the RX buffer
+      char inChar = Serial1.read(); 
+    }
+    I2cDisplay (BatteryLevel(Batt1_Vin_Val), Temp_Val_T, Temp_Val_U, BatteryLevel(Batt2_Vin_Val), DN);
 }
 
 

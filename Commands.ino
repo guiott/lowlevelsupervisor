@@ -16,25 +16,12 @@ the scheduled actions according to the commnad code.
 */
 
 byte linBuff[MAX_BUFF]; // Linear buffer 
-int hPwrOff; // Power Off command from HLS to LLS
-int Light[2];// headlights intensity
+byte hPwrOff;           // Power Off command from HLS to LLS
+byte Light[2];          // headlights intensity
+byte Obst[7];           // Obstacles distance
+byte lPwrOff;           // Power Off command from LLS to HLS
 
-/*-----------------------------------------------------------------------------*/
-// Buffer L_LLS
-struct _Buff_L
-{
-     byte BatV[2]; // Left and Right battery voltage level
-     byte Temp[2]; // Left and Right skulls temperature
-     byte Obst[7]; // Obstacles
-     byte lPwrOff; // Power Off command from LLS to HLS
-};
-
-union __Buff_L
-{
-    struct _Buff_L I;// to use as integers or chars, little endian LSB first
-    byte C[12];  // to use as bytes to send on char buffer
-}Buff_L;
-
+/*-----------------------------------------------------------------------------*/     
 void L_LLS(void)
 {/*  values to and from Low Level Supervisor LLS <-> HLS
      right now it's simulated by the same serial port but actually it will come from the LLS serial
@@ -69,25 +56,21 @@ void L_LLS(void)
 
      analogWrite(Light_L,Light[0]);
      analogWrite(Light_R,Light[1]);
-      
-     Buff_L.I.BatV[0] = Batt1_Vin_Val;
-     Buff_L.I.BatV[1] = Batt2_Vin_Val;
-     Buff_L.I.Temp[0] = Temp1_Val;
-     Buff_L.I.Temp[1] = Temp2_Val;
+ 
      
-     TxBuff[++Indx]=Buff_L.C[0];     // Battery level
-     TxBuff[++Indx]=Buff_L.C[1];
-     TxBuff[++Indx]=Buff_L.C[2];     // Temperature
-     TxBuff[++Indx]=Buff_L.C[3];
-     TxBuff[++Indx]=Buff_L.C[4];     // Obstacles
-     TxBuff[++Indx]=Buff_L.C[5];
-     TxBuff[++Indx]=Buff_L.C[6];
-     TxBuff[++Indx]=Buff_L.C[7];
-     TxBuff[++Indx]=Buff_L.C[8];
-     TxBuff[++Indx]=Buff_L.C[9];
-     TxBuff[++Indx]=Buff_L.C[10];
-     TxBuff[++Indx]=Buff_L.C[11];    // Power Off
-
+     TxBuff[++Indx]=BatteryLevel(Batt1_Vin_Val)*20; // Battery level
+     TxBuff[++Indx]=BatteryLevel(Batt2_Vin_Val)*20;
+     TxBuff[++Indx]=Temp1_Val/10;                   // Temperature
+     TxBuff[++Indx]=Temp2_Val/10;
+     TxBuff[++Indx]=Obst[0];                       // Obstacles
+     TxBuff[++Indx]=Obst[1]; 
+     TxBuff[++Indx]=Obst[2]; 
+     TxBuff[++Indx]=Obst[3]; 
+     TxBuff[++Indx]=Obst[4]; 
+     TxBuff[++Indx]=Obst[5]; 
+     TxBuff[++Indx]=Obst[6]; 
+     TxBuff[++Indx]=lPwrOff;                        // Power Off
+         
      TxData('L', Indx+1);
 }
 
