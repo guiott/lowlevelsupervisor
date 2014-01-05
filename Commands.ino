@@ -52,7 +52,11 @@ void L_LLS(void)
      Light[1] = linBuff[1];
      hPwrOff = linBuff[2];
      
-     if(hPwrOff == 1) Shutdown(100);
+     if((hPwrOff == 1) && (ShutdownFlag == 0)) 
+     {
+       Serial.println("---shutdown ordered by HLS---");
+       Shutdown(100);
+     }
 
      analogWrite(Light_L,Light[0]);
      analogWrite(Light_R,Light[1]);
@@ -62,7 +66,7 @@ void L_LLS(void)
      TxBuff[++Indx]=BatteryLevel(Batt2_Vin_Val)*20;
      TxBuff[++Indx]=Temp1_Val/10;                   // Temperature
      TxBuff[++Indx]=Temp2_Val/10;
-     TxBuff[++Indx]=Obst[0];                       // Obstacles
+     TxBuff[++Indx]=Obst[0];                        // Obstacles
      TxBuff[++Indx]=Obst[1]; 
      TxBuff[++Indx]=Obst[2]; 
      TxBuff[++Indx]=Obst[3]; 

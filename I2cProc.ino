@@ -21,10 +21,16 @@ void I2cSonar (void)
   }
   else
   {
-    if ((I2cTimeout != 0) && ((millis()-I2cTime) > I2cTimeout))
-    {// no receiving from HLS. Timeout = 0 means no timeout
+    unsigned long I2cElapsed = millis()-I2cTime;
+    if ((I2cTimeout != 0) && (I2cElapsed > I2cTimeout))
+    {// no receiving from HLS. Timeout = 0 means never timeout
        Defcon2(9); // never returns because this procedure hangs the program
     }
+    #ifdef DEBUG_MODE
+      Serial.print("***** No I2C replay from sonar since: ");
+      Serial.print(I2cElapsed);
+      Serial.println(" ms");
+    #endif
   }
 }
 
@@ -42,7 +48,7 @@ void I2cDisplay (int Level1, int Tens, int Units, int Level2, int Arrow)
       Wire.write(Units);               // Degrees tens
       Wire.write(Level2);              // LEDs bar right 
     Wire.write(Arrow);                 // Arrows, DN means Temp 1 
-    Wire.endTransmission();
+    Wire.endTransmission(); 
 }   
 
 //-----------------------------------------------------------------------------      

@@ -1,11 +1,3 @@
-/*-------------------------------------------------------------------------------
-Copyright 2013 Guido Ottaviani
-guido@guiott.com
-part of "ProtocolTester.ino"
-acts as a tester exchanging data with the protocol:
-http://www.guiott.com/Rino/CommandDescr/Protocol.htm
-*/
-
 boolean RX_ID_FLAG  = false;// command decode flag
 
 char HEADER = '@';          // header define
@@ -14,7 +6,7 @@ byte ChkSum = 0;
 
 /*-----------------------------------------------------------------------------*/
 void RxData(void)
-{ 
+{    
 #ifdef DEBUG_MODE
      Serial.print("in: ");
      Serial.print(RxPtrIn);
@@ -24,8 +16,7 @@ void RxData(void)
      Serial.print(RxBuff[RxPtrOut]);
      Serial.print("  stat: ");
      Serial.println(RxStatus);
-#endif
-     
+#endif   
   	switch (RxStatus)
 	{// Finite State Machine driven by the received bytes  
           case 0:	// idle

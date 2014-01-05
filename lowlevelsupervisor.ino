@@ -1,13 +1,13 @@
  /* ////////////////////////////////////////////////////////////////////////////
 ** File:      LowLevelSupervisor.ino
 */                                  
- unsigned char  Ver[] = "LinoLLS     1.0.0 Guiott 10-13"; // 30+1 char
+ unsigned char  Ver[] = "LinoLLS     1.1.0 Guiott 12-13"; // 30+1 char
 
 /**
 * \mainpage LowLevelSupervisor.ino
 * \author    Guido Ottaviani-->guido@guiott.com<--
-* \version 1.0.0
-* \date 10/13
+* \version 1.1.0
+* \date 12/13
 * \details 
  *
 -------------------------------------------------------------------------------
@@ -30,11 +30,12 @@ guido@guiott.com
 -------------------------------------------------------------------------------
 */
 // Compiler options. Define and timeouts should be modified to perform an easier debug
-//#define DEBUG_MODE // If defined the serial output is in ASCII for debug
+#define INIT_DEBUG_MODE // If defined the serial output is in ASCII for debug during initialization phase
+// #define DEBUG_MODE // If defined the serial output is in ASCII for debug
 // #define DEMO_MODE  // If defined it switches off at the end
 unsigned long Timeout=50;      // timeout in ms once RX packet started. It will be adapted on the serial speed
-unsigned long RxTimeout = 0;   // 500; // HLS communication timeout in ms: no communication at all. "0" means no timeout control 
-unsigned long I2cTimeout = 0;   // 500; // Sonar board communication timeout in ms: no communication at all
+unsigned long RxTimeout = 0;// HLS communication timeout in ms: no communication at all. "0" means no timeout control 
+unsigned long I2cTimeout =500;// Sonar board communication timeout in ms: no communication at all
 unsigned long ShutdownHlsTimeout = 99000; // HLS shutdown replay timeout in ms
 unsigned long StartupHlsTimeout = 255000;  // HLS startup  timeout in ms
 
@@ -137,9 +138,13 @@ int LedStat = LOW;
 int SwOffFlag = 0;            // Is the gracefull shutdown procedure started?
 int SwOffCount = 0;           // Cycle counter
 
-Metro BlinkCycle = Metro(BLINK_OFF,1);       // LED blink cycle
-Metro AnalogCycle = Metro(AVERAGE_CYCLE,1);  // Display write cycle
-Metro SwOffCycle = Metro(SW_OFF_CYCLE,1);    // Sofware Off Button Control cycle
+#define I2C_RX_CYCLE 200      // I2C cycle time to read data from QuadSonar
+
+Metro BlinkCycle = Metro(BLINK_OFF);       // LED blink cycle
+Metro AnalogCycle = Metro(AVERAGE_CYCLE);  // Display write cycle
+Metro SwOffCycle = Metro(SW_OFF_CYCLE);    // Sofware Off Button Control cycle
+Metro I2cRxCycle = Metro(I2C_RX_CYCLE);    // I2C cycle to read data from QuadSonar
+
 
 unsigned long TimeElapsed = millis();
 
@@ -215,18 +220,28 @@ void loop()
   if (BlinkCycle.check() == 1) {HeartBeat();}     // Led blink
   if (AnalogCycle.check() == 1) {AnalogRead();}   // Read all analog values
   if (SwOffCycle.check() == 1) {SwOff();}         // Control SW Off button
-  
+  // if (I2cRxCycle.check() == 1) {I2cSonar();}      // I2C Sonar cycle
+
   if (RxPtrIn != RxPtrOut) RxData(); // at least one character in circular queue
  
   if (ShutdownFlag == 1)
   {// shutdown procedure already started, waiting for HLS confirm
+    Serial.println("---shutdown procedure already started, waiting for HLS confirm---");
     Shutdown (10);  
   }
   
   if ((RxTimeout != 0) && ((millis()-RxTime) > RxTimeout))
   {// no receiving from HLS. Timeout = 0 means no timeout
-    ShutdownHlsTimeout = 5; // if no data from HLS the shutdown is immediate
-    Shutdown (10);  
+    Serial.print("---shutdown caused by RxTimeout--->   ");
+    Serial.print(millis()-RxTime);
+    Serial.print(" / ");
+    Serial.println(RxTimeout);
+    
+    if (ShutdownFlag == 0)
+    {
+      ShutdownHlsTimeout = 5; // if no data from HLS during normal operation, the shutdown is immediate
+      Shutdown (10);  
+    }
   }
   
   if (RxStatus == 99)                

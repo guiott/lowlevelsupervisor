@@ -1,11 +1,3 @@
-/*-------------------------------------------------------------------------------
-Copyright 2013 Guido Ottaviani
-guido@guiott.com
-part of "ProtocolTester.ino"
-acts as a tester exchanging data with the protocol:
-http://www.guiott.com/Rino/CommandDescr/Protocol.htm
-*/
-
 String RxErrorText = "";
 char  RxErrorExpected = ' ';
 char RxErrorFound = ' ';

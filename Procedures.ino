@@ -15,6 +15,18 @@ void Shutdown (int ShTime)
     hPwrOff = 1;
     lPwrOff = 1;
     
+    BlinkCycle.interval(BLINK_ALRT);
+    BlinkCycle.reset();
+    
+    AnalogCycle.interval(0XFFFF);
+    AnalogCycle.reset();
+    
+    SwOffCycle.interval(0XFFFF);
+    SwOffCycle.reset();
+    
+    I2cRxCycle.interval(0XFFFF);
+    I2cRxCycle.reset();
+    
     delay(ShTime);
   
     // start switching down the system
@@ -27,19 +39,11 @@ void Shutdown (int ShTime)
     }
   
     #ifdef DEBUG_MODE
-      DelayBar(2000);
+      DelayBar(200);
       Serial.println("-------------Software shutdown started-------------");
-      DelayBar(2000);
-      Serial.println("Switching off Battery 1");
-      DelayBar(2000);
-    #else 
-      delay(500);
-    #endif
-    digitalWrite(Batt_1_En,LOW);
-    
-    #ifdef DEBUG_MODE
+      DelayBar(200);
       Serial.println("Switching off Battery 2");
-      DelayBar(2000);
+      DelayBar(200);
     #else 
       delay(500);
     #endif
@@ -47,7 +51,7 @@ void Shutdown (int ShTime)
     
     #ifdef DEBUG_MODE
       Serial.println("Switching off Power Supply 1");
-      DelayBar(2000);
+      DelayBar(200);
     #else 
       delay(500);
     #endif
@@ -57,26 +61,42 @@ void Shutdown (int ShTime)
   }
   else     
   {// check for a while if HLS is still alive before getting off power
-    if ((digitalRead(Hls_Pwr_Off) == 0) || ((millis()-ShutdownHlsTime) > ShutdownHlsTimeout))
+  
+    if ((!digitalRead(Hls_Pwr_Off)) || ((millis()-ShutdownHlsTime) > ShutdownHlsTimeout))
     {// HLS power really off or  HLS didn't switch off for too much time? Switch off everything
+
       #ifdef DEBUG_MODE
-        Serial.println("Switching off Power Supply 2");
-        DelayBar(2000);
+        Serial.println("Switching off Battery 1");
+        DelayBar(200);
       #else 
         delay(500);
       #endif
+      digitalWrite(Batt_1_En,LOW); 
+    
+      #ifdef DEBUG_MODE
+        Serial.println("Switching off Power Supply 2");
+        DelayBar(200);
+      #else 
+        delay(500);
+      #endif
+
       digitalWrite(Pwr_2_En,LOW);
       
       #ifdef DEBUG_MODE
         Serial.println("SWITCHING OFF MYSELF");
-        DelayBar(4000);
+        DelayBar(1000);
         Serial.println("BYE");
       #else 
         delay(500);
       #endif    
       Beep(1000);
-      digitalWrite(Sw_Power_latch,LOW);
-      while(1){}; //never return
+      while(1)
+      { //never return
+        digitalWrite(Sw_Power_latch,LOW);
+      #ifdef DEBUG_MODE
+        Serial.println("SWITCHED OFF");
+      #endif    
+      }
     }
     else
     {
@@ -84,8 +104,10 @@ void Shutdown (int ShTime)
       if (ShtDwnTime < ShtDwnTimeOld)
       {
         DispDigit(ShtDwnTime, 16);  // convert value in two digits base 16
+        
         I2cDisplay ((BatteryLevel(Batt1_Vin_Val) | 0XF20), Digit_T, Digit_U, (BatteryLevel(Batt2_Vin_Val) | 0XF20), 0); //display timeout countdown
-      
+        delay(100);
+
         #ifdef DEBUG_MODE
           Serial.print("      Waiting for HLS shutdown  ");
           Serial.println(ShtDwnTime);
@@ -136,6 +158,7 @@ void SwOff (void)
      {
        if (!digitalRead(Sw_Off_Btn))  // Control SW Off button
         {  
+          Serial.println("---shutdown caused by SW Off button---");
           Shutdown(100);
         }   
      } 
@@ -154,12 +177,7 @@ void AnalogRead (void)
       to stabilize on the ADC Sample/Hold
   */
   int Dummy; 
-  
-  if (ShutdownFlag == 1)
-  {
-    return;
-  }
-  
+
   // Summation of N values
   switch (AveragePort)
   { 
@@ -331,7 +349,7 @@ void AnalogRead (void)
         Defcon2(8); // never returns because this procedure hangs the program
       } 
    
-     if (!SwOffFlag)
+     if (!ShutdownFlag)
      {// update the display with the new values only if shutdown procedure is not started 
        Display();    
      }

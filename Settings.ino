@@ -20,22 +20,22 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   V7_Val = int((float(Sum) * V7_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
     Serial.print("Low Level Supervisor Power Supply = ");
     Serial.print(float(V7_Val)/100.0);
     Serial.println("V");
   #endif
   if((V7_Val < PWR_THRESHOLD_MIN) || (V7_Val > PWR_THRESHOLD_MAX))
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: LLS Power Supply not in range *****");
     #endif
     Defcon1(1); // never returns because this procedure switches off LLS
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: LLS Power Supply is within the range");
     #endif    
   }
@@ -48,29 +48,29 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   Batt1_Vin_Val = int((float(Sum) * Batt1_Vin_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);  
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);  
     Serial.print("Battery 1 Level = ");
     Serial.print(float(Batt1_Vin_Val)/100.0); 
     Serial.println("V");
   #endif
   if(Batt1_Vin_Val < VBATT_THRESHOLD1) 
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: Battery 1 level very low *****");
     #endif
     Defcon1(2); // never returns because this procedure switches off LLS
   }
   else if(Batt1_Vin_Val < VBATT_THRESHOLD) 
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** WARNING: Battery 1 level low *****");
     #endif
     Defcon2(51); // never returns because this procedure hangs the program
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: Battery 1 is within the range");
     #endif    
     ErrCode=0;
@@ -84,35 +84,35 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   Batt2_Vin_Val = int((float(Sum) * Batt2_Vin_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
     Serial.print("Battery 2 Level = ");
     Serial.print(float(Batt2_Vin_Val)/100.0); 
     Serial.println("V");
   #endif  
   if(Batt2_Vin_Val < VBATT_THRESHOLD1) 
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: Battery 2 level very low *****");
     #endif
     Defcon2(3); // never returns because this procedure hangs the program
   }
   else if(Batt2_Vin_Val < VBATT_THRESHOLD) 
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** WARNING: Battery 2 level low *****");
     #endif
     Defcon2(52); // never returns because this procedure hangs the program
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: Battery 2 is within the range");
     #endif    
     ErrCode=0;
   }
 
-  #ifdef DEBUG_MODE
+  #ifdef INIT_DEBUG_MODE
       Serial.println("      Switching on Power Supply 1");
   #endif    
   digitalWrite(Pwr_1_En,HIGH);
@@ -127,22 +127,22 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   Pwr1_Vin_Val = int((float(Sum) * Pwr1_Vin_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
     Serial.print("Power Supply 1  = ");
     Serial.print(float(Pwr1_Vin_Val)/100.0);
     Serial.println("V");
   #endif      
   if((Pwr1_Vin_Val < PWR_THRESHOLD_MIN) || (Pwr1_Vin_Val > PWR_THRESHOLD_MAX))
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: Power Supply 1 not in range *****");
     #endif
     Defcon2(4); // never returns because this procedure hangs the program
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: Power Supply 1 is within the range");
       Serial.println("      Switching on Power Supply 2");
     #endif  
@@ -160,22 +160,22 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   Pwr2_Vin_Val = int((float(Sum) * Pwr2_Vin_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
     Serial.print("Power Supply 2  = ");
     Serial.print(float(Pwr2_Vin_Val)/100.0);
     Serial.println("V");
   #endif     
   if((Pwr2_Vin_Val < PWR_THRESHOLD_MIN) || (Pwr2_Vin_Val > PWR_THRESHOLD_MAX))
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: Power Supply 2 not in range *****");
     #endif
     Defcon2(5); // never returns because this procedure hangs the program
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: Power Supply 2 is within the range");
       Serial.println("      Testing temperature 1");
     #endif  
@@ -190,22 +190,22 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   Temp1_Val = int((float(Sum) * Temp1_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
     Serial.print("Temperature 1  = ");
     Serial.print(float(Temp1_Val)/10.0,1);
     Serial.println(" C");
   #endif      
   if((Temp1_Val > TEMP_THRESHOLD))
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: Temperature 1 too high *****");
     #endif
     Defcon2(7); // never returns because this procedure hangs the program
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: Temperature 1 is within the range");
       Serial.println("      Testing temperature 2");
     #endif  
@@ -223,22 +223,22 @@ void LLSstartup ()
   Sum = Sum >> 7; // average dividing by 128,
   Temp2_Val = int((float(Sum) * Temp2_K)+0.5);  // multiplying by K to obtain the final value int * 100
   Sum = 0;
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
     Serial.print("Temperature 2  = ");
     Serial.print(float(Temp2_Val)/10.0,1);
     Serial.println(" C");
   #endif      
     if((Temp2_Val > TEMP_THRESHOLD))
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("***** ERROR: Temperature 2 too high *****");
     #endif
     Defcon2(8); // never returns because this procedure hangs the program
   }
   else
   {
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      OK: Temperature 2 is within the range");
       Serial.println("      Switching on batteries");
     #endif  
@@ -249,12 +249,12 @@ void LLSstartup ()
   Temp_Val_U=(Temp2_Val+5-(Temp_Val_T*100))/10;
     
   digitalWrite(Batt_1_En,HIGH);
-  #ifdef DEBUG_MODE
-    DelayBar(2000);
+  #ifdef INIT_DEBUG_MODE
+    DelayBar(200);
   #endif     
   digitalWrite(Batt_2_En,HIGH);
   
-  #ifdef DEBUG_MODE
+  #ifdef INIT_DEBUG_MODE
     Serial.println("      Testing headlights");
   #endif  
     
@@ -292,23 +292,44 @@ void LLSstartup ()
     delay(5);
   }
 
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("      All basic hardware is ok");
       Serial.println("  ");
     #endif  
     
     #ifdef DEMO_MODE //switch off demonstration
+      Serial.println("---shutdown caused by demo over---");
       Shutdown(0);
     #endif
     
     delay(2000);    // wait for stabilization
     
-    I2cSonar(); // try an I2C communication with Sonar Board to test the goodness. If fail hangs LLS
+    for(i=0; i<10;i++)
+    {
+      I2cSonar(); // try an I2C communication with Sonar Board to test the goodness. If fails hangs LLS
+      delay(250);
+      #ifdef INIT_DEBUG_MODE
+        Serial.print("Left Left: ");
+        Serial.print(Obst[0]);
+        Serial.print("  -  Left Center: ");
+        Serial.print(Obst[1]);
+        Serial.print("  -  Center Left: ");
+        Serial.print(Obst[2]);
+        Serial.print("  -  Center Center: ");
+        Serial.print(Obst[3]);
+        Serial.print("  -  Center Right: ");
+        Serial.print(Obst[4]);
+        Serial.print("  -  Right Center: ");
+        Serial.print(Obst[5]);
+        Serial.print("  -  Right Right: ");
+        Serial.println(Obst[6]); 
+      #endif  
+    }
     
-    #ifdef DEBUG_MODE
-      Serial.println("      I2C sonar OK");
+    #ifdef INIT_DEBUG_MODE
+      Serial.println("-----------------------------------I2C sonar OK");
     #endif  
-    
+
     StartupHlsTimeout /= 1000;  //Timeout in seconds
     Serial1.setTimeout(1000);
     while(!Serial1.find("@"))
@@ -317,7 +338,7 @@ void LLSstartup ()
       I2cDisplay ((BatteryLevel(Batt1_Vin_Val) | 0XF20), Digit_T, Digit_U, (BatteryLevel(Batt2_Vin_Val) | 0XF20), 0); //display timeout countdown
       StartupHlsTimeout--;
       
-      #ifdef DEBUG_MODE
+      #ifdef INIT_DEBUG_MODE
         Serial.print("      Waiting for HLS startup  ");
         Serial.println(StartupHlsTimeout);
       #endif  
@@ -328,7 +349,7 @@ void LLSstartup ()
       }
     }
     
-    #ifdef DEBUG_MODE
+    #ifdef INIT_DEBUG_MODE
       Serial.println("++++++++++++++++ everithing's fine - ROBOT OPERATIVE ++++++++++++++++");
       Serial.println("  ");
       Serial.println("  ");
@@ -339,6 +360,9 @@ void LLSstartup ()
       char inChar = Serial1.read(); 
     }
     I2cDisplay (BatteryLevel(Batt1_Vin_Val), Temp_Val_T, Temp_Val_U, BatteryLevel(Batt2_Vin_Val), DN);
+    
+    RxTime = millis();  // reset watchdog
+    I2cTime = millis();
 }
 
 
