@@ -301,7 +301,7 @@ void AnalogRead (void)
       Batt2_Vin_Val = int((float(Batt2_Vin_Val) * Batt2_Vin_K)+0.5);// multiplying by K to obtain the final value int * 100
       if(Batt2_Vin_Val < VBATT_THRESHOLD1) 
       {
-       Defcon1(3); // never returns because this procedure switches off LLS
+       Defcon2(3); // never returns because this procedure hangs the program
       }
       else if(Batt2_Vin_Val < VBATT_THRESHOLD) 
       {
@@ -394,8 +394,14 @@ void Defcon1 (int Code)
   digitalWrite(Pwr_2_En,LOW);
   I2cBeep(1000);
   delay(3000);
-  digitalWrite(Sw_Power_latch,LOW);
-  while(1){}; //never return
+  
+  while(1)
+  { //never return
+    digitalWrite(Sw_Power_latch,LOW);
+  #ifdef DEBUG_MODE
+    Serial.println("SWITCHED OFF");
+  #endif    
+  }
 }
 
 //-----------------------------------------------------------------------------      
