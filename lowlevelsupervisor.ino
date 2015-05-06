@@ -1,17 +1,17 @@
  /* ////////////////////////////////////////////////////////////////////////////
 ** File:      LowLevelSupervisor.ino
 */                                  
- unsigned char  Ver[] = "LinoLLS     1.1.0 Guiott 12-13"; // 30+1 char
+ unsigned char  Ver[] = "LinoLLS     1.1.1 Guiott 05-15"; // 30+1 char
 
 /**
 * \mainpage LowLevelSupervisor.ino
 * \author    Guido Ottaviani-->guido@guiott.com<--
-* \version 1.1.0
-* \date 12/13
+* \version 1.1.1
+* \date 06/15
 * \details 
  *
 -------------------------------------------------------------------------------
-\copyright 2012-2013 Guido Ottaviani
+\copyright 2012-2015 Guido Ottaviani
 guido@guiott.com
 
     LowLevelSupervisor is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ guido@guiott.com
 unsigned long Timeout=50;      // timeout in ms once RX packet started. It will be adapted on the serial speed
 unsigned long RxTimeout = 0;// HLS communication timeout in ms: no communication at all. "0" means no timeout control 
 unsigned long I2cTimeout =500;// Sonar board communication timeout in ms: no communication at all
-unsigned long ShutdownHlsTimeout = 99000; // HLS shutdown replay timeout in ms
+unsigned long ShutdownHlsTimeout = 255000; // HLS shutdown replay timeout in ms
 unsigned long StartupHlsTimeout = 255000;  // HLS startup  timeout in ms
 
 
@@ -220,7 +220,7 @@ void loop()
   if (BlinkCycle.check() == 1) {HeartBeat();}     // Led blink
   if (AnalogCycle.check() == 1) {AnalogRead();}   // Read all analog values
   if (SwOffCycle.check() == 1) {SwOff();}         // Control SW Off button
-  // if (I2cRxCycle.check() == 1) {I2cSonar();}      // I2C Sonar cycle
+  if (I2cRxCycle.check() == 1) {I2cSonar();}      // I2C Sonar cycle
 
   if (RxPtrIn != RxPtrOut) RxData(); // at least one character in circular queue
  

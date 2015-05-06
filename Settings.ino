@@ -323,6 +323,16 @@ void LLSstartup ()
         Serial.print(Obst[5]);
         Serial.print("  -  Right Right: ");
         Serial.println(Obst[6]); 
+        Serial.println("---------------------------------------------------------------------------------------------------------------------------------------------------------");
+        Serial.print("Left Left: ");
+        Serial.print(Obst[7]);
+        Serial.print("  -  Center Left: ");
+        Serial.print(Obst[8]);
+        Serial.print("  -  Center Right: ");
+        Serial.print(Obst[9]);
+        Serial.print("  -  Right Right: ");
+        Serial.println(Obst[10]); 
+        Serial.println("---------------------------------------------------------------------------------------------------------------------------------------------------------");
       #endif  
     }
     
@@ -332,7 +342,7 @@ void LLSstartup ()
 
     StartupHlsTimeout /= 1000;  //Timeout in seconds
     Serial1.setTimeout(1000);
-    while(!Serial1.find("@"))
+    while(!Serial1.find("@")) 
     {//wait for HLS replay. Just header is enough
       DispDigit(StartupHlsTimeout, 16);  // convert value in two digits base 16
       I2cDisplay ((BatteryLevel(Batt1_Vin_Val) | 0XF20), Digit_T, Digit_U, (BatteryLevel(Batt2_Vin_Val) | 0XF20), 0); //display timeout countdown
@@ -342,7 +352,7 @@ void LLSstartup ()
         Serial.print("      Waiting for HLS startup  ");
         Serial.println(StartupHlsTimeout);
       #endif  
-      
+ 
       if(StartupHlsTimeout <= 0)
       {
             Defcon2(6); // timeout error. Never returns because this procedure hangs the program

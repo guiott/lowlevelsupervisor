@@ -2,7 +2,7 @@
 void I2cSonar (void)
 { // read a word (2 bytes) from compass sensor
   int Val = 0;
-  int I2cNum = 7; // number of bytes to read
+  int I2cNum = 11; // number of bytes to read
   
   Wire.beginTransmission(I2C_SONAR);
   Wire.write(0);     // sets register pointer to 0
@@ -18,6 +18,11 @@ void I2cSonar (void)
     Obst[4] = Wire.read(); // Center Right
     Obst[5] = Wire.read(); // Right Center
     Obst[6] = Wire.read(); // Right Right
+    
+    Obst[7] = Wire.read(); // Left Left RAW
+    Obst[8] = Wire.read(); // Center Left RAW
+    Obst[9] = Wire.read(); // Center Right RAW
+    Obst[10]= Wire.read(); // Right Right RAW
   }
   else
   {

@@ -18,7 +18,7 @@ the scheduled actions according to the commnad code.
 byte linBuff[MAX_BUFF]; // Linear buffer 
 byte hPwrOff;           // Power Off command from HLS to LLS
 byte Light[2];          // headlights intensity
-byte Obst[7];           // Obstacles distance
+byte Obst[11];          // Obstacles distance 7 averaged + 4 RAW
 byte lPwrOff;           // Power Off command from LLS to HLS
 
 /*-----------------------------------------------------------------------------*/     
@@ -43,6 +43,11 @@ void L_LLS(void)
      13     Obst[5]      RC Right Center 27°
      14     Obst[6]      RR Right Right 52°
      15     lPwrOff      Switch Off from LLS to HLS -> 0 = PowerOn, 1 = PowerOff
+     
+     16     Obst[7]      LL Lef Left -40°
+     17     Obst[8]      CL Center Left -15°
+     18     Obst[9]      CR Center Right 15°
+     19     Obst[10]     RR Right Right 40°
      */
      
      int Indx = RX_HEADER_LEN;  // Head length, number of characters in buffer before valid data
@@ -74,7 +79,11 @@ void L_LLS(void)
      TxBuff[++Indx]=Obst[5]; 
      TxBuff[++Indx]=Obst[6]; 
      TxBuff[++Indx]=lPwrOff;                        // Power Off
-         
+     TxBuff[++Indx]=Obst[7];                        // Obstacles RAW data
+     TxBuff[++Indx]=Obst[8]; 
+     TxBuff[++Indx]=Obst[9]; 
+     TxBuff[++Indx]=Obst[10]; 
+     
      TxData('L', Indx+1);
 }
 
